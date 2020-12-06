@@ -48,6 +48,7 @@ def getbook(s, url):
     chunk_size = 8192
     start_dl = datetime.now()
     padding = 0
+    
     print('Downloading {} ...'.format(filename))
     
     with open(filename, 'wb') as book:
