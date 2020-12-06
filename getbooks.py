@@ -6,6 +6,8 @@ import re
 #import shutil
 from datetime import datetime
 
+MB = 1024 * 1024
+
 def parseArgs():
     urlPattern = r'https://(www\.)?books\.ru/member/download_agreement\.php\?back_url='
 
@@ -35,19 +37,19 @@ def getFilename(s):
     return fname.strip().strip('"')
 
 def getbook(s, url):
-    MB = 1024 * 1024
     data = {'agreed' : 'Y',
             'go' : "1"  
             }
     
     r = s.post(url, data = data, stream = True)
+    
     filename = getFilename(r.headers['content-disposition'])
     size = 0
     chunk_size = 8192
     start_dl = datetime.now()
+    padding = 0
+    print('Downloading {} ...'.format(filename))
     with open(filename, 'wb') as book:
-        #r.raw.decode_content = True
-        #shutil.copyfileobj(r.raw, book)
         for chunk in r.iter_content(chunk_size = chunk_size):
             if chunk:  # filter out keep-alive new chunks
                 book.write(chunk)
@@ -68,8 +70,15 @@ def getbook(s, url):
                     speed_string = '{:.2f} kB/s'.format(speed)
                 elif speed // MB >= 1:
                     speed_string = '{:.2f} MB/s'.format(speed / 1024)
-            
-                print('Downloaded %s with speed %s                                        ' % (size_string, speed_string), end='\r')
+                    
+                s = 'Downloaded {} with speed {}'.format(size_string, speed_string)
+                
+                padding = max(padding, len(s))
+                
+                print(s)
+                print(padding)
+                            
+                print('{:{width}}'.format(s, width = str(padding)), end='\r')
 
 def login(s, username, password):
     loginurl = 'https://www.books.ru/member/login.php'
@@ -78,7 +87,14 @@ def login(s, username, password):
             'go': 'login',
             }
     r = s.post(loginurl, data = data)
-    return ('неверный пароль' not in r.text) and (r.status_code == 200)
+
+    if 'неверный пароль' in r.text:
+        return 'Incorrect login or password'
+
+    if r.status_code != 200:
+        return 'Server return error, error code: {}'.format(r.status_code)
+
+    return None
 
 def initSession():
     headers = {
@@ -106,10 +122,11 @@ if config == None:
     exit(1)
 
 s = initSession()
-login(s, config.username, config.password)
-#print(r.text)
-#print(s.cookies)
-#soup = BeautifulSoup (r.text, 'lxml')
-#print(soup.prettify())
-   
-getbook(s, config.url)
+
+r = login(s, config.username, config.password)
+
+if r:
+    print(r)
+    exit(1)
+ 
+r = getbook(s, config.url)
