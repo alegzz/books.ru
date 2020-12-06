@@ -49,6 +49,7 @@ def getbook(s, url):
     start_dl = datetime.now()
     padding = 0
     print('Downloading {} ...'.format(filename))
+    
     with open(filename, 'wb') as book:
         for chunk in r.iter_content(chunk_size = chunk_size):
             if chunk:  # filter out keep-alive new chunks
