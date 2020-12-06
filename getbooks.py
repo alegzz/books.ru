@@ -1,4 +1,5 @@
 import requests, urllib
+from requests.adapters import HTTPAdapter
 from sys import exit
 import argparse
 from bs4 import BeautifulSoup
@@ -7,12 +8,15 @@ import re
 from datetime import datetime
 
 MB = 1024 * 1024
+MAINURL = 'https://www.books.ru/'
 
 def parseArgs():
-    urlPattern = r'https://(www\.)?books\.ru/member/download_agreement\.php\?back_url='
+    urlPattern = r'https://(www\.)?books\.ru/((member/download_agreement\.php\?back_url=)|(order\.php\?order=))'
 
     parser = argparse.ArgumentParser(description='Books.ru downloader')
-
+    parser.add_argument('-s', '--skip-first', type=int, default=0, help='Skip first N books from order (default 0)', dest='skip')
+    parser.add_argument('-r', '--retries', type=int, default=1, help='How many times (0 - inf, default 1)', dest='retries')
+    
     parser.add_argument('username', action="store", help="username for books.ru")
     parser.add_argument('password', action="store", help="password for books.ru")
     parser.add_argument('url', action="store", help="url to book")
@@ -78,6 +82,9 @@ def getbook(s, url):
                 padding = max(padding, len(s))
                 
                 print('{:{width}}'.format(s, width = str(padding)), end='\r')
+        book.close()
+        if padding > 0:
+            print()
 
 def login(s, username, password):
     loginurl = 'https://www.books.ru/member/login.php'
@@ -95,7 +102,7 @@ def login(s, username, password):
 
     return None
 
-def initSession():
+def initSession(retries):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0',
         #'Referer': 'Referer: https://www.books.ru/order.php?order=2121041',
@@ -105,6 +112,8 @@ def initSession():
         }
     
     s = requests.Session()
+    
+    s.mount('https://', HTTPAdapter(max_retries=retries))
 
     #s.hooks = {
     #    'response': lambda r, *args, **kwargs: r.raise_for_status()
@@ -115,17 +124,35 @@ def initSession():
     
     return s
 
+def getbooks(s, url, skip):
+    r = s.get(url)
+    soup = BeautifulSoup(r.text, "lxml")
+    
+    links = []
+    
+    for a in soup.find_all('a', href=True, class_='pdf'):
+        links.append(MAINURL + a['href'])
+    
+    l = len(links)
+    
+    for i in range(skip, l):
+        print('Downloading {} of {}'.format(i + 1, l))
+        getbook(s, links[i])
+
 config = parseArgs()
 
 if config == None:
     exit(1)
 
-s = initSession()
+s = initSession(config.retries)
 
 r = login(s, config.username, config.password)
 
 if r:
     print(r)
     exit(1)
- 
-r = getbook(s, config.url)
+
+if '/member/' in config.url: 
+    r = getbook(s, config.url)
+else:
+    getbooks(s, config.url, config.skip)
