@@ -75,9 +75,6 @@ def getbook(s, url):
                 
                 padding = max(padding, len(s))
                 
-                print(s)
-                print(padding)
-                            
                 print('{:{width}}'.format(s, width = str(padding)), end='\r')
 
 def login(s, username, password):
