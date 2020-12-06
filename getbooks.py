@@ -15,7 +15,7 @@ def parseArgs():
 
     parser = argparse.ArgumentParser(description='Books.ru downloader')
     parser.add_argument('-s', '--skip-first', type=int, default=0, help='Skip first N books from order (default 0)', dest='skip')
-    parser.add_argument('-r', '--retries', type=int, default=1, help='How many times (0 - inf, default 1)', dest='retries')
+    parser.add_argument('-r', '--retries', type=int, default=1, help='How many times (default 1)', dest='retries')
     
     parser.add_argument('username', action="store", help="username for books.ru")
     parser.add_argument('password', action="store", help="password for books.ru")
