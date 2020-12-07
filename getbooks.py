@@ -62,7 +62,7 @@ def getbook(s, url):
                 size += chunk_size
                 if size // MB < 1:
                     size_string = '{} kB'.format(size)
-                elif size // MB >= 1:
+                else: #if size // MB >= 1:
                     size_string = '{:.2f} MB'.format(size / MB)
             
                 timedelta = (datetime.now() - start_dl).seconds
@@ -74,7 +74,7 @@ def getbook(s, url):
             
                 if speed // MB < 1:
                     speed_string = '{:.2f} kB/s'.format(speed)
-                elif speed // MB >= 1:
+                else: # speed // MB >= 1:
                     speed_string = '{:.2f} MB/s'.format(speed / 1024)
                     
                 s = 'Downloaded {} with speed {}'.format(size_string, speed_string)
